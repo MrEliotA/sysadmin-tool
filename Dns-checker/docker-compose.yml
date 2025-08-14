@@ -1,6 +1,9 @@
-version: '3.8'
+version: "3.9"
+
 services:
   dnschecker:
     build: .
+    container_name: dnschecker
     ports:
       - "8080:8080"
+    restart: unless-stopped
