@@ -4,14 +4,12 @@ import dns.exception
 
 app = Flask(__name__)
 
-# ریزالورهای اصلی برای بخش /  (نام خوانا برای گزارش)
 DNS_SERVERS = {
     "Cloudflare": "1.1.1.1",
     "Google": "8.8.8.8",
     "Quad9": "9.9.9.9",
 }
 
-# ریزالورهای گسترده برای propagation (می‌تونی کم/زیاد کنی)
 PUBLIC_DNS = [
     "1.1.1.1",         # Cloudflare
     "8.8.8.8",         # Google
@@ -20,7 +18,6 @@ PUBLIC_DNS = [
     "8.26.56.26",      # Comodo
 ]
 
-# رکوردهایی که همزمان بررسی می‌کنیم
 DEFAULT_RECORD_TYPES = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA"]
 
 def _safe_txt_to_string(r):
@@ -58,7 +55,7 @@ def resolve_all_records(resolver: dns.resolver.Resolver, domain: str, record_typ
     return results
 
 def build_resolver(nameserver_ip: str) -> dns.resolver.Resolver:
-    r = dns.resolver.Resolver(configure=False)  # از resolv.conf سیستم نخواند
+    r = dns.resolver.Resolver(configure=False)  
     r.nameservers = [nameserver_ip]
     r.timeout = 2.0
     r.lifetime = 3.0
@@ -70,16 +67,12 @@ def health():
 
 @app.route("/")
 def dns_all():
-    """
-    دریافت همه‌ی رکوردها از چند ریزالور اصلی.
-    ورودی: ?domain=example.com
-    انتخابی: ?types=A,AAAA,MX  (اختیاری؛ اگر ندهید همه‌ی انواع پیش‌فرض برگردانده می‌شود)
-    """
+    
     domain = request.args.get("domain")
     if not domain:
         return jsonify({"error": "Domain parameter is required, e.g. /?domain=example.com"}), 400
 
-    # امکان فیلتر رکوردها (اختیاری)
+    
     types_param = request.args.get("types")
     if types_param:
         record_types = [t.strip().upper() for t in types_param.split(",") if t.strip()]
@@ -99,11 +92,7 @@ def dns_all():
 
 @app.route("/propagation")
 def propagation():
-    """
-    بررسی انتشار (propagation) برای همه‌ی رکوردها روی چند DNS عمومی.
-    ورودی: ?domain=example.com
-    انتخابی: ?types=A,AAAA,... (اختیاری؛ در صورت عدم ارسال، همه‌ی انواع پیش‌فرض)
-    """
+    
     domain = request.args.get("domain")
     if not domain:
         return jsonify({"error": "Domain parameter is required, e.g. /propagation?domain=example.com"}), 400
@@ -126,5 +115,5 @@ def propagation():
     })
 
 if __name__ == "__main__":
-    # با Dockerfile قبلی: CMD ["python", "dns_checker.py"]
+    
     app.run(host="0.0.0.0", port=8080)
