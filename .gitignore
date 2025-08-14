@@ -1,0 +1,6 @@
+# OS / Editor
+.DS_Store
+*.log
+
+# Docker
+**/cache
