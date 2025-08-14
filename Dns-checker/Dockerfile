@@ -1,19 +1,12 @@
-FROM php:8.2-cli
-
-# ابزارهای لازم
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    dnsutils curl ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim
 
 WORKDIR /app
-COPY src/ /app/
 
-# پورت قابل تنظیم
-ENV PORT=8080
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Healthcheck (اپ ساده‌مون مسیر /health دارد)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -fsS http://localhost:${PORT}/health || exit 1
+COPY src/ /app
 
-# اجرای سرور داخلی PHP
-CMD ["sh", "-lc", "php -S 0.0.0.0:${PORT} index.php"]
+EXPOSE 8080
+
+CMD ["python", "dns_checker.py"]

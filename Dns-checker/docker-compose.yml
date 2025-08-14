@@ -1,8 +1,6 @@
 version: '3.8'
 services:
-  app:
+  dnschecker:
     build: .
     ports:
       - "8080:8080"
-    environment:
-      - PORT=8080
