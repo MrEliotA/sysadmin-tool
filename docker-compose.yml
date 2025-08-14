@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  dnschecker:
+    build: ./dns-checker
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dns-checker:/app
