@@ -3,6 +3,14 @@ services:
   dnschecker:
     build: ./dns-checker
     ports:
-      - "8080:8080"
-    volumes:
-      - ./dns-checker:/app
+      - "8081:8081"
+
+  sslchecker:
+    build: ./sslchecker
+    ports:
+      - "8082:8082"
+
+  domainchecker:
+    build: ./domain-info
+    ports:
+      - "8083:8083"
