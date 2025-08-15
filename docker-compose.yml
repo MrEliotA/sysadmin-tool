@@ -20,7 +20,13 @@ services:
     ports:
       - "8084:8084"
 
-  techchecker:
-    build: ./tech-info
+  #techchecker:
+   # build: ./tech-info
+    #ports:
+     # - "8085:8085"
+
+
+  app:
+    build: ./app
     ports:
-      - "8085:8085"
+      - "8086:8086"
