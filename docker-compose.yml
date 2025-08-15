@@ -14,3 +14,8 @@ services:
     build: ./domain-info
     ports:
       - "8083:8083"
+
+  ipchecker:
+    build: ./ip-info
+    ports:
+      - "8084:8084"
