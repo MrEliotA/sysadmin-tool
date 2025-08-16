@@ -19,7 +19,7 @@ SECURITY_HEADERS = [
     "Referrer-Policy", "Permissions-Policy"
 ]
 
-# ---- ابزارها ----
+# ---- tools ----
 def get_ip(domain):
     try:
         return socket.gethostbyname(domain)
@@ -128,5 +128,5 @@ def health():
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
-    # پورت ماژول security
+    # port container
     app.run(host="0.0.0.0", port=8086)
