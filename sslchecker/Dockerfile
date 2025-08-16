@@ -2,20 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libssl-dev \
-    libffi-dev \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-
+# نصب وابستگی‌ها
 COPY requirements.txt .
-RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
+# کپی کد
+COPY ssl_inspector.py .
 
-COPY . .
-
+EXPOSE 8082
 CMD ["python", "ssl_inspector.py"]
