@@ -1,4 +1,5 @@
-Flask
-requests
+Flask==3.1.0
+requests==2.31.0
+Wappalyzer==1.0.16
 python-Wappalyzer
-beautifulsoup4
+setuptools
