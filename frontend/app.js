@@ -104,10 +104,6 @@
 
   /* -------------------- DNS: Cloudflare & Google, one line per record -------------------- */
   const TYPE_KEYS = ["SOA","NS","A","AAAA","CNAME","MX","TXT","CAA","SRV","PTR"];
-  function typeNumToName(n){
-    const map = {1:"A",2:"NS",5:"CNAME",6:"SOA",12:"PTR",15:"MX",16:"TXT",28:"AAAA",33:"SRV",257:"CAA"};
-    return map[n] || String(n || "").toUpperCase();
-  }
   function recordValueToString(type, value){
     try{
       if (value == null) return "";
@@ -171,7 +167,7 @@
 
     const pre = document.createElement("pre");
     pre.className = "monospace";
-    pre.style.whiteSpace = "pre";     // هر رکورد یک خط؛ اسکرول افقی مجاز
+    pre.style.whiteSpace = "pre";
     pre.style.textAlign = "left";
     pre.style.direction = "ltr";
     pre.style.overflow = "auto";
@@ -197,18 +193,16 @@
     targetEl.innerHTML = "";
     const servers = (data && data.servers) || {};
 
-    // Cloudflare
     const cf = servers.Cloudflare || servers.cloudflare || servers["1.1.1.1"];
     targetEl.appendChild(renderDNSProviderBlock("Cloudflare", cf));
 
-    // Google
     const gg = servers.Google || servers.google || servers["8.8.8.8"] || servers["dns.google"];
     targetEl.appendChild(renderDNSProviderBlock("Google", gg));
 
     addCopyBtn(targetEl);
   }
 
-  /* -------------------- SSL: robust mapping & rendering -------------------- */
+  /* -------------------- shared path helpers -------------------- */
   function getPathCI(obj, pathArr){
     let cur = obj;
     for (const seg of pathArr){
@@ -227,16 +221,10 @@
     }
     return undefined;
   }
-  function toLineValue(v){
-    if (v == null) return "—";
-    if (Array.isArray(v)) return v.map(toLineValue).join(", ");
-    if (typeof v === "object"){
-      const entries = Object.entries(v);
-      if (entries.length <= 6) return entries.map(([k,val]) => `${k}:${Array.isArray(val)?val.join("|"):String(val)}`).join("; ");
-      return JSON.stringify(v);
-    }
-    return String(v);
-  }
+  const toLineValue = v =>
+    v == null ? "—" : (Array.isArray(v) ? v.join(", ") : (typeof v === "object" ? JSON.stringify(v) : String(v)));
+
+  /* -------------------- SSL (left aligned) -------------------- */
   function parseDateMaybe(s){
     if (!s) return null;
     const dt = new Date(s);
@@ -250,13 +238,11 @@
     if (!dt) return null;
     const ms = dt.getTime() - Date.now();
     return Math.ceil(ms / (1000*60*60*24));
-    }
-
+  }
   function renderSSLCard(targetEl, data){
     targetEl.classList.remove("empty");
     targetEl.innerHTML = "";
 
-    // days_remaining از local_certificate
     let days = getByPaths(data, [
       ["local_certificate","days_remaining"],
       ["days_remaining"]
@@ -271,27 +257,28 @@
       daysNum = Number.isFinite(computed) ? computed : NaN;
     }
 
-    // ردیف متریک (عدد درشت + برچسب days left کنار آن)
     const metricRow = document.createElement("div");
     metricRow.style.display = "flex";
     metricRow.style.alignItems = "center";
-    metricRow.style.justifyContent = "center";
+    metricRow.style.justifyContent = "flex-start";
     metricRow.style.gap = "10px";
+    metricRow.style.textAlign = "left";
     const metricNum = document.createElement("div");
     metricNum.className = "metric " + (Number.isFinite(daysNum) ? (daysNum < 10 ? "bad" : "ok") : "muted");
+    metricNum.style.textAlign = "left";
     metricNum.textContent = Number.isFinite(daysNum) ? String(daysNum) : "—";
     const metricLbl = document.createElement("div");
     metricLbl.textContent = "days left";
     metricLbl.style.fontSize = "14px";
     metricLbl.style.color = "var(--subtle)";
+    metricLbl.style.textAlign = "left";
     metricRow.appendChild(metricNum);
     metricRow.appendChild(metricLbl);
     targetEl.appendChild(metricRow);
 
-    // Grade caption + big grade
     const gradeCaption = document.createElement("div");
     gradeCaption.textContent = "Grade";
-    gradeCaption.style.textAlign = "center";
+    gradeCaption.style.textAlign = "left";
     gradeCaption.style.fontSize = "12px";
     gradeCaption.style.color = "var(--subtle)";
     gradeCaption.style.marginTop = "-4px";
@@ -305,34 +292,19 @@
     if (gradesVal !== undefined){
       const g = document.createElement("div");
       g.className = "grade";
+      g.style.textAlign = "left";
       g.textContent = toLineValue(gradesVal) || "—";
       targetEl.appendChild(g);
     }
 
-    // خطوط خواسته‌شده
     const lines = document.createElement("div");
     lines.className = "ssl-lines";
+    lines.style.textAlign = "left";
 
-    // subject.commonName
-    const subjCN = getByPaths(data, [
-      ["local_certificate","subject","commonName"],
-      ["subject","commonName"]
-    ]);
-
-    // issuer.*
-    const issuerCN  = getByPaths(data, [
-      ["local_certificate","issuer","commonName"],
-      ["issuer","commonName"]
-    ]);
-    const issuerOrg = getByPaths(data, [
-      ["local_certificate","issuer","organizationName"],
-      ["issuer","organizationName"]
-    ]);
-    const issuerCountry = getByPaths(data, [
-      ["local_certificate","issuer","countryName"],
-      ["issuer","countryName"]
-    ]);
-
+    const subjCN = getByPaths(data, [["local_certificate","subject","commonName"], ["subject","commonName"]]);
+    const issuerCN  = getByPaths(data, [["local_certificate","issuer","commonName"], ["issuer","commonName"]]);
+    const issuerOrg = getByPaths(data, [["local_certificate","issuer","organizationName"], ["issuer","organizationName"]]);
+    const issuerCountry = getByPaths(data, [["local_certificate","issuer","countryName"], ["issuer","countryName"]]);
     const nva = getByPaths(data, [["local_certificate","not_valid_after"], ["not_valid_after"]]);
     const nvb = getByPaths(data, [["local_certificate","not_valid_before"], ["not_valid_before"]]);
     const sig = getByPaths(data, [["local_certificate","signature_algorithm"], ["signature_algorithm"]]);
@@ -346,9 +318,7 @@
       ["not_valid_after", nva],
       ["not_valid_before", nvb],
       ["signature_algorithm", sig],
-      // ← commonName (issuer) مطابق خواسته
       ["commonName", issuerCN],
-      // ← organizationName (issuer) مطابق خواسته
       ["organizationName", issuerOrg],
       ["version", ver],
       ["grades", gradesVal],
@@ -374,7 +344,136 @@
     addCopyBtn(targetEl);
   }
 
-  /* -------------------- IP: fill from DNS if found -------------------- */
+  /* -------------------- IP Info: ordered, left-aligned -------------------- */
+  function renderIPInfoOrdered(targetEl, data){
+    targetEl.classList.remove("empty");
+    targetEl.innerHTML = "";
+
+    const box = document.createElement("div");
+    box.className = "ssl-lines";
+    box.style.textAlign = "left";
+    box.style.direction = "ltr";
+
+    const mapping = [
+      ["as",          [ ["as"], ["raw","as"] ]],
+      ["continent",   [ ["raw","continent"] ]],
+      ["city",        [ ["city"], ["raw","city"] ]],
+      ["country",     [ ["country"], ["raw","country"] ]],
+      ["lat",         [ ["lat"], ["raw","lat"] ]],
+      ["lon",         [ ["lon"], ["raw","lon"] ]],
+      ["regionName",  [ ["raw","regionName"] ]],
+      ["timezone",    [ ["timezone"], ["raw","timezone"] ]],
+      ["zip",         [ ["zip"], ["raw","zip"] ]],
+      ["hosting",     [ ["raw","hosting"] ]],
+      ["reverse",     [ ["raw","reverse"], ["reverse_dns"] ]],
+    ];
+
+    mapping.forEach(([label, paths])=>{
+      const val = getByPaths(data, paths);
+      const line = document.createElement("div");
+      line.className = "kv-line";
+      line.style.textAlign = "left";
+      const k = document.createElement("span");
+      k.className = "key";
+      k.textContent = `${label}: `;
+      const v = document.createElement("span");
+      v.className = "val";
+      v.textContent = (val === null || val === undefined) ? "—" :
+                      (typeof val === "object" ? JSON.stringify(val) : String(val));
+      line.appendChild(k);
+      line.appendChild(v);
+      box.appendChild(line);
+    });
+
+    targetEl.appendChild(box);
+    addCopyBtn(targetEl);
+  }
+
+  /* -------------------- Domain Info: unified, WITH keys (ordered) -------------------- */
+  function renderDomainInfoUnifiedWithKeys(targetEl, data){
+    targetEl.classList.remove("empty");
+    targetEl.innerHTML = "";
+
+    let rawObj = null;
+    try { rawObj = data.raw ? JSON.parse(data.raw) : null; } catch { rawObj = null; }
+
+    const box = document.createElement("div");
+    box.className = "ssl-lines";
+    box.style.textAlign = "left";
+    box.style.direction = "ltr";
+
+    const addKV = (key, val) => {
+      const line = document.createElement("div");
+      line.className = "kv-line";
+      const k = document.createElement("span");
+      k.className = "key";
+      k.textContent = `${key}: `;
+      const v = document.createElement("span");
+      v.className = "val";
+      v.textContent = (val === null || val === undefined || val === "") ? "—" : String(val);
+      line.appendChild(k);
+      line.appendChild(v);
+      box.appendChild(line);
+    };
+
+    // ترتیب مورد نظر:
+    addKV("creation_date", data.creation_date ?? (rawObj && rawObj.creation_date));
+    addKV("expiration_date", data.expiration_date ?? (rawObj && rawObj.expiration_date));
+
+    let updated = (rawObj && rawObj.updated_date) ?? data.updated_date;
+    if (Array.isArray(updated)) updated = updated.join(", ");
+    addKV("updated_date", updated);
+
+    addKV("status", (rawObj && rawObj.status) ?? data.status);
+
+    // name_servers: هر مورد در خط خودش با همان کلید
+    const nsList = Array.isArray(data.name_servers) ? data.name_servers
+                 : (data.name_servers ? [data.name_servers] : []);
+    if (nsList.length) nsList.forEach(ns => addKV("name_servers", ns));
+    else addKV("name_servers", "—");
+
+    // سایر آیتم‌های مهم (با کلید)
+    addKV("registrar", (rawObj && rawObj.registrar) ?? data.registrar);
+    addKV("dnssec", rawObj ? rawObj.dnssec : undefined);
+    addKV("name", rawObj ? rawObj.name : undefined);
+    addKV("org", rawObj ? rawObj.org : undefined);
+    addKV("address", rawObj ? rawObj.address : undefined);
+    addKV("city", rawObj ? rawObj.city : undefined);
+    addKV("state", rawObj ? rawObj.state : undefined);
+    addKV("country", rawObj ? rawObj.country : undefined);
+    addKV("emails", data.emails ?? (rawObj && rawObj.emails));
+    addKV("whois_server", data.whois_server ?? (rawObj && rawObj.whois_server));
+
+    targetEl.appendChild(box);
+    addCopyBtn(targetEl);
+  }
+
+  /* -------------------- Analyze: robust fallback to avoid 502 -------------------- */
+  async function fetchAnalyzeData(target){
+    const candidates = [
+      ["/analyze/analyze", { target }],
+      ["/analyze/analyze/", { target }],
+      ["/analyze/", { target }],
+      ["/analyze", { target }],
+    ];
+    let lastErr = null;
+    for (const [ep, params] of candidates){
+      try{
+        const data = await getJSON(makeURL(ep, params));
+        return data;
+      }catch(err){
+        lastErr = err;
+        // اگر 502/404 بود، مسیر بعدی را امتحان کن
+        if (!/HTTP (502|404)/.test(err.message)) {
+          // سایر خطاها را همانجا گزارش کن
+          throw err;
+        }
+      }
+    }
+    throw lastErr || new Error("Analyze endpoint not reachable");
+  }
+
+  /* -------------------- helpers -------------------- */
   function pickIPFromDNS(data){
     const found = new Set();
     const pushIfIP = (s) => {
@@ -411,17 +510,20 @@
     pre.style.whiteSpace = "pre-wrap";
     pre.style.wordBreak = "break-word";
     pre.style.overflowWrap = "anywhere";
+    pre.style.textAlign = "left";
+    pre.style.direction = "ltr";
     pre.textContent = fmt(data);
     targetEl.appendChild(pre);
     addCopyBtn(targetEl);
   }
+
   async function fetchAndFillIP(ip){
     if (!ip || !isIP(ip)) return;
     putSpinner(els.ip.body);
     setBadge(els.ip.badge, "", "در حال بررسی");
     try{
       const data = await getJSON(makeURL("/ip/", { target: ip }));
-      await renderJSONSimple(els.ip.body, data);
+      renderIPInfoOrdered(els.ip.body, data);
       setBadge(els.ip.badge, "ok", "موفق");
     }catch(err){
       els.ip.body.textContent = err.message;
@@ -458,7 +560,7 @@
       putSpinner(els.ip.body);
       setBadge(els.ip.badge, "", "در حال بررسی");
       getJSON(makeURL("/ip/", { target: value }))
-        .then(data => renderJSONSimple(els.ip.body, data))
+        .then(data => { renderIPInfoOrdered(els.ip.body, data); })
         .then(()=> setBadge(els.ip.badge,"ok","موفق"))
         .catch(err => { els.ip.body.textContent = err.message; setBadge(els.ip.badge,"err","خطا"); });
     }
@@ -503,20 +605,20 @@
       );
     }
 
-    // Domain
+    // Domain (یکدست + با کلید)
     if (runDomain){
       tasks.push(
         getJSON(makeURL("/domain/", { domain: value }))
-          .then(data => renderJSONSimple(els.domain.body, data))
+          .then(data => renderDomainInfoUnifiedWithKeys(els.domain.body, data))
           .then(()=> setBadge(els.domain.badge,"ok","موفق"))
           .catch(err => { els.domain.body.textContent = err.message; setBadge(els.domain.badge,"err","خطا"); })
       );
     }
 
-    // Analyze
+    // Analyze (fallback مسیرها برای جلوگیری از 502)
     if (runAnalyze){
       tasks.push(
-        getJSON(makeURL("/analyze/analyze", { target: value }))
+        fetchAnalyzeData(value)
           .then(data => {
             renderJSONSimple(els.analyze.body, data);
             setBadge(els.analyze.badge,"ok","موفق");
@@ -528,7 +630,10 @@
               }
             }catch{}
           })
-          .catch(err => { els.analyze.body.textContent = err.message; setBadge(els.analyze.badge,"err","خطا"); })
+          .catch(err => {
+            els.analyze.body.textContent = err.message;
+            setBadge(els.analyze.badge,"err","خطا");
+          })
       );
     }
 
