@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Domain Inspector — فرانت سبک</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <span class="logo">🔎</span>
+        <h1>Domain Inspector</h1>
+      </div>
+      <p class="subtitle">DNS • SSL • IP • Domain • Analyze • Propagation</p>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <form id="query-form" class="query-form">
+          <label for="inputValue">دامنه یا IP</label>
+          <div class="input-row">
+            <input id="inputValue" name="inputValue" type="text"
+                   placeholder="مثلاً example.com یا 65.109.179.148" autocomplete="off" />
+            <button id="submitBtn" type="submit">بررسی</button>
+            <button id="resetBtn" type="button" class="ghost">ریست</button>
+          </div>
+
+          <div class="toggles">
+            <label class="switch">
+              <input id="autoAnalyze" type="checkbox" checked />
+              <span>اجرای تحلیل همزمان (Analyze)</span>
+            </label>
+            <label class="switch">
+              <input id="propCheck" type="checkbox" />
+              <span>بررسی Propagation DNS</span>
+            </label>
+          </div>
+
+          <div id="hint" class="hint">برای IP فقط کارت «IP Info» و «Analyze» اجرا می‌شود.</div>
+        </form>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <div class="card-head">
+            <h3>DNS</h3>
+            <span class="badge" id="dnsStatus">در انتظار</span>
+          </div>
+          <div id="dnsBody" class="card-body monospace empty">هنوز داده‌ای نیست.</div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h3>SSL</h3>
+            <span class="badge" id="sslStatus">در انتظار</span>
+          </div>
+          <div id="sslBody" class="card-body monospace empty">هنوز داده‌ای نیست.</div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h3>IP Info</h3>
+            <span class="badge" id="ipStatus">در انتظار</span>
+          </div>
+          <div id="ipBody" class="card-body monospace empty">هنوز داده‌ای نیست.</div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h3>Domain</h3>
+            <span class="badge" id="domainStatus">در انتظار</span>
+          </div>
+          <div id="domainBody" class="card-body monospace empty">هنوز داده‌ای نیست.</div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h3>Analyze</h3>
+            <span class="badge" id="analyzeStatus">در انتظار</span>
+          </div>
+          <div id="analyzeBody" class="card-body monospace empty">هنوز داده‌ای نیست.</div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h3>DNS Propagation</h3>
+            <span class="badge" id="propStatus">در انتظار</span>
+          </div>
+          <div id="propBody" class="card-body monospace empty">هنوز داده‌ای نیست.</div>
+        </article>
+      </section>
+
+      <section class="card muted">
+        <div class="footer">
+          <span id="statusBar">آماده.</span>
+          <div class="actions">
+            <button id="copyAllBtn" class="ghost small">کپی همه نتایج</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <template id="spinnerTpl">
+      <div class="spinner" aria-label="در حال بارگذاری" title="Loading"></div>
+    </template>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

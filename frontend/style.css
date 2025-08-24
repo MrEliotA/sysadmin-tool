@@ -1,0 +1,75 @@
+:root{
+  --bg: #0b0f13;
+  --surface: #12171d;
+  --muted: #0f141a;
+  --text: #e8edf2;
+  --subtle:#9fb0c0;
+  --accent:#6fc2ff;
+  --ok:#38d39f;
+  --warn:#ffd166;
+  --err:#ff6b6b;
+  --border:#1f2a36;
+  --radius: 16px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Naskh Arabic UI", "Vazirmatn", Tahoma, Arial;
+}
+.app-header{
+  padding:28px 20px 8px; border-bottom:1px solid var(--border); background:linear-gradient(180deg, #0b0f13 0%, #0b0f13c0 100%);
+  position:sticky; top:0; backdrop-filter: blur(6px); z-index: 10;
+}
+.brand{display:flex; align-items:center; gap:10px}
+.logo{font-size:28px}
+h1{font-size:22px; margin:0}
+.subtitle{color:var(--subtle); margin:6px 0 0; font-size:13px}
+.container{max-width:1100px; margin:18px auto; padding:0 16px}
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow: 0 10px 24px rgba(0,0,0,.25); padding:16px;
+}
+.card.muted{background:var(--muted)}
+.grid{
+  display:grid; grid-template-columns: repeat( auto-fill, minmax(280px, 1fr) ); gap:14px; margin-top:16px;
+}
+.card-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+.card-body{min-height:110px; border:1px dashed var(--border); border-radius:12px; padding:12px; background:#0d1318}
+.card-body.empty{color:#6d7f91}
+.monospace{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace; font-size:13px; line-height:1.6; overflow:auto; white-space:pre-wrap; word-break:break-word}
+.badge{
+  font-size:12px; padding:3px 8px; border-radius:999px; border:1px solid var(--border); background:#0f151b; color:var(--subtle)
+}
+.badge.ok{background: #0f1a16; color:#8ff0c7; border-color:#164634}
+.badge.warn{background: #1a170f; color:#ffe58f; border-color:#5a4b1f}
+.badge.err{background: #1a0f11; color:#ff9da6; border-color:#5a1f2a}
+.query-form label{display:block; margin-bottom:6px; color:var(--subtle)}
+.input-row{display:flex; gap:8px}
+input[type="text"]{
+  flex:1; padding:12px 14px; border-radius:12px; border:1px solid var(--border); background:#0d1318; color:var(--text);
+  outline:none; transition:border .2s, box-shadow .2s;
+}
+input[type="text"]:focus{border-color:#1f4461; box-shadow:0 0 0 3px rgba(111,194,255,.15)}
+button{
+  padding:12px 16px; border-radius:12px; background:var(--accent); color:#0a0e12; font-weight:700; border:none; cursor:pointer;
+}
+button.ghost{background:transparent; color:var(--subtle); border:1px solid var(--border)}
+button.small{padding:8px 10px; font-size:12px}
+.toggles{display:flex; gap:18px; margin-top:10px}
+.switch{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--subtle)}
+.hint{margin-top:8px; font-size:12px; color:var(--subtle)}
+.footer{display:flex; align-items:center; justify-content:space-between}
+#statusBar{font-size:12px; color:var(--subtle)}
+.spinner{
+  width:18px; height:18px; border:2px solid #2a3a49; border-top-color: var(--accent); border-radius:50%; animation:spin 1s linear infinite;
+  display:inline-block; vertical-align:middle; margin:6px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.copy-btn{
+  margin-top:10px; font-size:11px; padding:6px 8px; border-radius:8px; background:#0f151b; border:1px solid var(--border); color:var(--subtle)
+}
+.details{margin:4px 0}
+.details summary{cursor:pointer; color:#c5d6e6}
+.kv{display:grid; grid-template-columns: 140px 1fr; gap:6px 10px; margin:8px 0}
+.kv .key{color:#9fb0c0}
+hr.soft{border:0; border-top:1px solid var(--border); margin:10px 0}

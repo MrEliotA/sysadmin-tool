@@ -10,3 +10,16 @@ services:
     environment:
       FLASK_APP: "app"
       FLASK_ENV: "development"
+
+
+
+  frontend:
+    build:
+      context: ./frontend      # مسیر پوشه فرانت
+      dockerfile: Dockerfile   # Dockerfile فرانت
+    container_name: domain-inspector-frontend
+    #depends_on:
+    #  - api
+    ports:
+      - "3000:80"              # اپ فرانت روی http://localhost:3000
+    restart: unless-stopped
