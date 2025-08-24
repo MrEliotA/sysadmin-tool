@@ -1,61 +1,76 @@
-from flask import Flask, request, jsonify
+from flask import Blueprint, request, jsonify
 import socket, ssl, datetime, time, requests
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 
-app = Flask(__name__)
+# SSL Labs API URL
+SSL_LABS_API = "https://api.ssllabs.com/api/v3/analyze"
+
+# Create Blueprint for SSL Inspector
+app = Blueprint('ssl_inspector', __name__)
 
 # ---------- Local certificate (direct TLS) ----------
 def get_local_ssl_info(domain: str):
-    ctx = ssl.create_default_context()
-    conn = ctx.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM), server_hostname=domain)
-    conn.settimeout(7.0)
-    conn.connect((domain, 443))
-    cert_bin = conn.getpeercert(True)
-    conn.close()
-
-    cert = x509.load_der_x509_certificate(cert_bin, default_backend())
-
-    def _name_to_dict(name: x509.Name):
-        items = {}
-        for attr in name:
-            key = getattr(attr.oid, "_name", None) or attr.oid.dotted_string
-            items[key] = attr.value
-        return items
-
-    # signature hash algorithm (safe)
+    """Fetch the local SSL certificate of the given domain"""
     try:
-        sig_hash = cert.signature_hash_algorithm.name
-    except Exception:
-        sig_hash = "unknown"
+        ctx = ssl.create_default_context()
+        conn = ctx.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM), server_hostname=domain)
+        conn.settimeout(7.0)
+        conn.connect((domain, 443))
+        cert_bin = conn.getpeercert(True)
+        conn.close()
 
-    # public key type + size
-    pk = cert.public_key()
-    pk_type = type(pk).__name__
-    pk_size = getattr(pk, "key_size", None)
+        cert = x509.load_der_x509_certificate(cert_bin, default_backend())
 
-    not_before = cert.not_valid_before_utc
-    not_after = cert.not_valid_after_utc
-    now_utc = datetime.datetime.now(datetime.timezone.utc)
-    days_remaining = (not_after - now_utc).days
+        def _name_to_dict(name: x509.Name):
+            items = {}
+            for attr in name:
+                key = getattr(attr.oid, "_name", None) or attr.oid.dotted_string
+                items[key] = attr.value
+            return items
 
-    return {
-        "subject": _name_to_dict(cert.subject),
-        "issuer": _name_to_dict(cert.issuer),
-        "serial_number": str(cert.serial_number),
-        "version": cert.version.name,
-        "not_valid_before": not_before.strftime("%Y-%m-%d %H:%M:%S %Z"),
-        "not_valid_after": not_after.strftime("%Y-%m-%d %H:%M:%S %Z"),
-        "days_remaining": days_remaining,
-        "signature_algorithm": sig_hash,
-        "public_key_type": pk_type,
-        "public_key_size": pk_size,
-    }
+        # Signature hash algorithm (safe)
+        try:
+            sig_hash = cert.signature_hash_algorithm.name
+        except Exception:
+            sig_hash = "unknown"
+
+        # Public key type + size
+        pk = cert.public_key()
+        pk_type = type(pk).__name__
+        pk_size = getattr(pk, "key_size", None)
+
+        # Access not_valid_before and not_valid_after directly
+        not_before = cert.not_valid_before
+        not_after = cert.not_valid_after
+        
+        # Ensure both dates are timezone-aware
+        now_utc = datetime.datetime.now(datetime.timezone.utc)  # Make `now_utc` aware
+        not_after = not_after.replace(tzinfo=datetime.timezone.utc)  # Ensure `not_after` is aware
+
+        # Calculate days remaining until certificate expiration
+        days_remaining = (not_after - now_utc).days
+
+        return {
+            "subject": _name_to_dict(cert.subject),
+            "issuer": _name_to_dict(cert.issuer),
+            "serial_number": str(cert.serial_number),
+            "version": cert.version.name,
+            "not_valid_before": not_before.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "not_valid_after": not_after.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "days_remaining": days_remaining,
+            "signature_algorithm": sig_hash,
+            "public_key_type": pk_type,
+            "public_key_size": pk_size,
+        }
+
+    except Exception as e:
+        return {"error": f"Local SSL check failed: {str(e)}"}
 
 # ---------- SSL Labs (poll until READY/ERROR) ----------
 def fetch_ssllabs_raw(domain: str, max_wait_seconds: int = 120):
-    # از کش استفاده می‌کنیم؛ اگر آماده نبود، تا آماده شدن صبر می‌کنیم
-    base = "https://api.ssllabs.com/api/v3/analyze"
+    """Fetch the SSL Labs analysis for the domain"""
+    base = SSL_LABS_API
     params = {
         "host": domain,
         "all": "done",
@@ -64,16 +79,19 @@ def fetch_ssllabs_raw(domain: str, max_wait_seconds: int = 120):
     }
     deadline = time.time() + max_wait_seconds
     while True:
-        r = requests.get(base, params=params, timeout=15)
-        r.raise_for_status()
-        data = r.json()
-        status = data.get("status")
-        if status in ("READY", "ERROR") or time.time() > deadline:
-            return data
-        time.sleep(5)
+        try:
+            r = requests.get(base, params=params, timeout=15)
+            r.raise_for_status()
+            data = r.json()
+            status = data.get("status")
+            if status in ("READY", "ERROR") or time.time() > deadline:
+                return data
+            time.sleep(5)
+        except requests.exceptions.RequestException as e:
+            return {"error": f"SSL Labs request failed: {str(e)}"}
 
 def _grade_rank(g: str):
-    # رتبه‌بندی برای انتخاب بدترین/بهترین
+    """Assign rank to SSL grade"""
     order = {
         "A+": 0, "A": 1, "A-": 2, "B": 3, "C": 4, "D": 5, "E": 6, "F": 7,
         "T": 8,  # Trust issues / no grade
@@ -82,6 +100,7 @@ def _grade_rank(g: str):
     return order.get(g, 9)
 
 def summarize_ssllabs(data: dict):
+    """Summarize the SSL Labs response"""
     if not isinstance(data, dict):
         return {"error": "Invalid SSL Labs response"}
 
@@ -154,20 +173,23 @@ def summarize_ssllabs(data: dict):
 # ---------- Flask routes ----------
 @app.route("/ssl", methods=["GET"])
 def ssl_endpoint():
+    """SSL endpoint for fetching SSL info and SSL Labs data"""
     domain = request.args.get("domain", "").strip()
     if not domain:
         return jsonify({"error": "Please provide ?domain=example.com"}), 400
 
+    # Local certificate info
     try:
         local_info = get_local_ssl_info(domain)
     except Exception as e:
-        local_info = {"error": f"Local SSL check failed: {e}"}
+        local_info = {"error": f"Local SSL check failed: {str(e)}"}
 
+    # Fetch SSL Labs data
     try:
         raw = fetch_ssllabs_raw(domain)
         summary = summarize_ssllabs(raw)
     except Exception as e:
-        summary = {"error": f"SSL Labs fetch failed: {e}"}
+        summary = {"error": f"SSL Labs fetch failed: {str(e)}"}
 
     return jsonify({
         "domain": domain,
@@ -177,8 +199,5 @@ def ssl_endpoint():
 
 @app.route("/health")
 def health():
+    """Health check route"""
     return jsonify({"status": "ok"})
-
-if __name__ == "__main__":
-    # طبق معماری قبلی: پورت 8082
-    app.run(host="0.0.0.0", port=8082)

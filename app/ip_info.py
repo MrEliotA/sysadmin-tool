@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Blueprint, request, jsonify
 import socket
 import requests
 
-app = Flask(__name__)
+app = Blueprint('ip_info', __name__)
 
 def get_ip_info(target):
     try:
@@ -52,6 +52,3 @@ def check_ip():
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8084)

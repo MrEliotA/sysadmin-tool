@@ -1,32 +1,12 @@
-version: "3.9"
+version: '3.8'
+
 services:
-  dnschecker:
-    build: ./dns-checker
-    ports:
-      - "8081:8081"
-
-  sslchecker:
-    build: ./sslchecker
-    ports:
-      - "8082:8082"
-
-  domainchecker:
-    build: ./domain-info
-    ports:
-      - "8083:8083"
-
-  ipchecker:
-    build: ./ip-info
-    ports:
-      - "8084:8084"
-
-  #techchecker:
-   # build: ./tech-info
-    #ports:
-     # - "8085:8085"
-
-
   app:
-    build: ./app
+    build: .
     ports:
-      - "8086:8086"
+      - "8080:8080"
+    volumes:
+      - .:/app
+    environment:
+      FLASK_APP: "app"
+      FLASK_ENV: "development"

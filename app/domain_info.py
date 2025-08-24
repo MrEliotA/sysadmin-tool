@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Blueprint, request, jsonify
 import whois
 from datetime import datetime
 
-app = Flask(__name__)
+app = Blueprint('domain_info', __name__)
 
 def domain_info(domain):
     try:
@@ -41,6 +41,3 @@ def check_domain():
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8083)

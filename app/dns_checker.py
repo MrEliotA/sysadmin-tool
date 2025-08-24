@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Blueprint, request, jsonify
 import dns.resolver
 import dns.exception
 
-app = Flask(__name__)
+app = Blueprint('dns_checker', __name__)
 
 DNS_SERVERS = {
     "Cloudflare": "1.1.1.1",
@@ -55,24 +55,22 @@ def resolve_all_records(resolver: dns.resolver.Resolver, domain: str, record_typ
     return results
 
 def build_resolver(nameserver_ip: str) -> dns.resolver.Resolver:
-    r = dns.resolver.Resolver(configure=False)  
+    r = dns.resolver.Resolver(configure=False)
     r.nameservers = [nameserver_ip]
     r.timeout = 2.0
     r.lifetime = 3.0
     return r
 
-@app.route("/health")
+@app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def dns_all():
-    
     domain = request.args.get("domain")
     if not domain:
         return jsonify({"error": "Domain parameter is required, e.g. /?domain=example.com"}), 400
 
-    
     types_param = request.args.get("types")
     if types_param:
         record_types = [t.strip().upper() for t in types_param.split(",") if t.strip()]
@@ -90,9 +88,8 @@ def dns_all():
         "servers": servers_out
     })
 
-@app.route("/propagation")
+@app.route("/propagation", methods=["GET"])
 def propagation():
-    
     domain = request.args.get("domain")
     if not domain:
         return jsonify({"error": "Domain parameter is required, e.g. /propagation?domain=example.com"}), 400
@@ -113,7 +110,3 @@ def propagation():
         "record_types": record_types,
         "servers": out
     })
-
-if __name__ == "__main__":
-    
-    app.run(host="0.0.0.0", port=8080)

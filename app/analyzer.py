@@ -1,11 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Blueprint, request, jsonify
 import socket
 import requests
 from urllib.parse import urlparse
 from Wappalyzer import Wappalyzer, WebPage
-from config import ALIENVAULT_API_KEY
-
-app = Flask(__name__)
+#from config.py import ALIENVAULT_API_KEY
+ALIENVAULT_API_KEY = "Y0fa1fd334ace3f185c9a495746273d907788763b586dc6872f0dd213d8c1dc44"
+app = Blueprint('analyzer', __name__)
 
 COMMON_PORTS = [20, 21, 22, 23, 25, 53, 67, 68, 69, 80,
     110, 111, 123, 135, 137, 138, 139, 143, 161, 162,
@@ -38,7 +38,7 @@ def port_scan(domain):
             if sock.connect_ex((ip, port)) == 0:
                 banner = ""
                 try:
-                    sock.sendall(b"HEAD / HTTP/1.0\r\n\r\n")
+                    sock.sendall(b"HEAD / HTTP/1.0")
                     banner = sock.recv(1024).decode(errors="ignore").strip()
                 except:
                     pass
@@ -126,7 +126,3 @@ def analyze():
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
-
-if __name__ == "__main__":
-    # port container
-    app.run(host="0.0.0.0", port=8086)

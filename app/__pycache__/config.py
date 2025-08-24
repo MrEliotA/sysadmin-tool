@@ -1,0 +1,5 @@
+# config.py
+
+#  API AlienVault OTX
+ALIENVAULT_API_KEY = "Y0fa1fd334ace3f185c9a495746273d907788763b586dc6872f0dd213d8c1dc44"
+ 

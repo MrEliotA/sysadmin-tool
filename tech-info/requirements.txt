@@ -1,4 +1,0 @@
-Flask
-requests
-python-Wappalyzer
-beautifulsoup4
