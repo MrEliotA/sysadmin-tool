@@ -88,7 +88,7 @@
   async function getJSON(url){
     const controller = new AbortController();
     controllers.push(controller);
-    const res = await fetch(url, { signal: controller.signal });
+    const res = await fetch(url, { signal: controller.signal, cache: "no-store", headers: { "Accept": "application/json, text/plain, */*" } });
     if (!res.ok){
       const text = await res.text().catch(()=>"");
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
@@ -167,7 +167,7 @@
 
     const pre = document.createElement("pre");
     pre.className = "monospace";
-    pre.style.whiteSpace = "pre";
+    pre.style.whiteSpace = "pre"; // هر رکورد یک خط؛ اسکرول افقی در صورت نیاز
     pre.style.textAlign = "left";
     pre.style.direction = "ltr";
     pre.style.overflow = "auto";
@@ -301,10 +301,23 @@
     lines.className = "ssl-lines";
     lines.style.textAlign = "left";
 
-    const subjCN = getByPaths(data, [["local_certificate","subject","commonName"], ["subject","commonName"]]);
-    const issuerCN  = getByPaths(data, [["local_certificate","issuer","commonName"], ["issuer","commonName"]]);
-    const issuerOrg = getByPaths(data, [["local_certificate","issuer","organizationName"], ["issuer","organizationName"]]);
-    const issuerCountry = getByPaths(data, [["local_certificate","issuer","countryName"], ["issuer","countryName"]]);
+    const subjCN = getByPaths(data, [
+      ["local_certificate","subject","commonName"],
+      ["subject","commonName"]
+    ]);
+    const issuerCN  = getByPaths(data, [
+      ["local_certificate","issuer","commonName"],
+      ["issuer","commonName"]
+    ]);
+    const issuerOrg = getByPaths(data, [
+      ["local_certificate","issuer","organizationName"],
+      ["issuer","organizationName"]
+    ]);
+    const issuerCountry = getByPaths(data, [
+      ["local_certificate","issuer","countryName"],
+      ["issuer","countryName"]
+    ]);
+
     const nva = getByPaths(data, [["local_certificate","not_valid_after"], ["not_valid_after"]]);
     const nvb = getByPaths(data, [["local_certificate","not_valid_before"], ["not_valid_before"]]);
     const sig = getByPaths(data, [["local_certificate","signature_algorithm"], ["signature_algorithm"]]);
@@ -426,13 +439,13 @@
 
     addKV("status", (rawObj && rawObj.status) ?? data.status);
 
-    // name_servers: هر مورد در خط خودش با همان کلید
+    // name_servers: هر مورد در خط خودش
     const nsList = Array.isArray(data.name_servers) ? data.name_servers
                  : (data.name_servers ? [data.name_servers] : []);
     if (nsList.length) nsList.forEach(ns => addKV("name_servers", ns));
     else addKV("name_servers", "—");
 
-    // سایر آیتم‌های مهم (با کلید)
+    // سایر آیتم‌های مفید
     addKV("registrar", (rawObj && rawObj.registrar) ?? data.registrar);
     addKV("dnssec", rawObj ? rawObj.dnssec : undefined);
     addKV("name", rawObj ? rawObj.name : undefined);
@@ -448,32 +461,7 @@
     addCopyBtn(targetEl);
   }
 
-  /* -------------------- Analyze: robust fallback to avoid 502 -------------------- */
-  async function fetchAnalyzeData(target){
-    const candidates = [
-      ["/analyze/analyze", { target }],
-      ["/analyze/analyze/", { target }],
-      ["/analyze/", { target }],
-      ["/analyze", { target }],
-    ];
-    let lastErr = null;
-    for (const [ep, params] of candidates){
-      try{
-        const data = await getJSON(makeURL(ep, params));
-        return data;
-      }catch(err){
-        lastErr = err;
-        // اگر 502/404 بود، مسیر بعدی را امتحان کن
-        if (!/HTTP (502|404)/.test(err.message)) {
-          // سایر خطاها را همانجا گزارش کن
-          throw err;
-        }
-      }
-    }
-    throw lastErr || new Error("Analyze endpoint not reachable");
-  }
-
-  /* -------------------- helpers -------------------- */
+  /* -------------------- helpers: IP from DNS & generic JSON viewer -------------------- */
   function pickIPFromDNS(data){
     const found = new Set();
     const pushIfIP = (s) => {
@@ -556,6 +544,7 @@
     const runAnalyze = els.autoAnalyze.checked;
     const runProp = els.propCheck.checked && (type === "domain");
 
+    // ورودی IP → کارت IP Info
     if (type === "ip") {
       putSpinner(els.ip.body);
       setBadge(els.ip.badge, "", "در حال بررسی");
@@ -615,12 +604,12 @@
       );
     }
 
-    // Analyze (fallback مسیرها برای جلوگیری از 502)
+    // Analyze → دقیقاً از /api/analyze/analyze
     if (runAnalyze){
       tasks.push(
-        fetchAnalyzeData(value)
+        getJSON(makeURL("/analyze/analyze", { target: value }))
           .then(data => {
-            renderJSONSimple(els.analyze.body, data);
+            renderJSONSimple(els.analyze.body, data);  // نمایش ساده JSON مثل نسخه‌های اولیه
             setBadge(els.analyze.badge,"ok","موفق");
             try{
               const ipFromAnalyze =
