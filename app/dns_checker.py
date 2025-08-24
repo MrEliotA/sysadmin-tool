@@ -7,7 +7,6 @@ app = Blueprint('dns_checker', __name__)
 DNS_SERVERS = {
     "Cloudflare": "1.1.1.1",
     "Google": "8.8.8.8",
-    "Quad9": "9.9.9.9",
 }
 
 PUBLIC_DNS = [

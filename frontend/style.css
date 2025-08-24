@@ -73,3 +73,53 @@ button.small{padding:8px 10px; font-size:12px}
 .kv{display:grid; grid-template-columns: 140px 1fr; gap:6px 10px; margin:8px 0}
 .kv .key{color:#9fb0c0}
 hr.soft{border:0; border-top:1px solid var(--border); margin:10px 0}
+/* ----- DNS Zone View ----- */
+.zone{
+  background:#0d1318;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+  font-size:12px;
+  line-height:1.35; /* فشرده‌تر */
+  white-space:pre;  /* مثل فایل زون */
+  overflow:auto;
+}
+.zone-group{margin-bottom:10px}
+.zone-head{
+  color:#c5d6e6;
+  font-weight:700;
+  margin-bottom:6px;
+}
+.zone-muted{color:#7e8e9c}
+
+/* ----- SSL card styles ----- */
+.metric{
+  text-align:center;
+  font-size:46px;
+  font-weight:900;
+  margin:6px 0 10px;
+  line-height:1;
+}
+.metric.ok{ color: var(--ok); }
+.metric.bad{ color: var(--err); }
+.metric.muted{ color: var(--subtle); }
+
+.grade{
+  text-align:center;
+  font-size:24px;
+  font-weight:800;
+  margin-bottom:12px;
+  color:#cfe7ff;
+}
+
+.ssl-lines .kv-line{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+  font-size:13px;
+  line-height:1.5;
+  margin:4px 0;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.ssl-lines .kv-line .key{ color:#9fb0c0; margin-inline-end:6px; }
