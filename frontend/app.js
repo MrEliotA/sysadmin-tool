@@ -445,7 +445,7 @@
     if (nsList.length) nsList.forEach(ns => addKV("name_servers", ns));
     else addKV("name_servers", "—");
 
-    // سایر آیتم‌های مفید
+    // سایر آیتم‌ها
     addKV("registrar", (rawObj && rawObj.registrar) ?? data.registrar);
     addKV("dnssec", rawObj ? rawObj.dnssec : undefined);
     addKV("name", rawObj ? rawObj.name : undefined);
@@ -456,6 +456,62 @@
     addKV("country", rawObj ? rawObj.country : undefined);
     addKV("emails", data.emails ?? (rawObj && rawObj.emails));
     addKV("whois_server", data.whois_server ?? (rawObj && rawObj.whois_server));
+
+    targetEl.appendChild(box);
+    addCopyBtn(targetEl);
+  }
+
+  /* -------------------- Analyze: technologies → open ports → subdomains -------------------- */
+  function renderAnalyzeCustom(targetEl, data){
+    targetEl.classList.remove("empty");
+    targetEl.innerHTML = "";
+
+    const box = document.createElement("div");
+    box.className = "ssl-lines";
+    box.style.textAlign = "left";
+    box.style.direction = "ltr";
+
+    const addSectionTitle = (title) => {
+      const t = document.createElement("div");
+      t.style.fontWeight = "700";
+      t.style.margin = "6px 0 4px";
+      t.textContent = title;
+      box.appendChild(t);
+    };
+
+    const addLine = (text) => {
+      const line = document.createElement("div");
+      line.className = "kv-line";
+      line.textContent = text == null || text === "" ? "—" : String(text);
+      box.appendChild(line);
+    };
+
+    // 1) technologies
+    addSectionTitle("technologies");
+    const techs = Array.isArray(data?.technologies) ? data.technologies : [];
+    if (techs.length) techs.forEach(t => addLine(t));
+    else addLine("—");
+
+    // 2) open ports
+    addSectionTitle("open ports");
+    const ports = Array.isArray(data?.open_ports) ? data.open_ports : [];
+    if (ports.length){
+      ports.forEach(p => {
+        const port = p?.port ?? "—";
+        let banner = p?.banner;
+        if (banner == null || banner === "") banner = "—";
+        // state نباید نمایش داده شود
+        addLine(`${port} — ${banner}`);
+      });
+    } else {
+      addLine("—");
+    }
+
+    // 3) subdomains
+    addSectionTitle("subdomains");
+    const subs = Array.isArray(data?.subdomains) ? data.subdomains : [];
+    if (subs.length) subs.forEach(s => addLine(s));
+    else addLine("—");
 
     targetEl.appendChild(box);
     addCopyBtn(targetEl);
@@ -604,12 +660,12 @@
       );
     }
 
-    // Analyze → دقیقاً از /api/analyze/analyze
+    // Analyze → از /api/analyze/analyze و رندر سفارشی
     if (runAnalyze){
       tasks.push(
         getJSON(makeURL("/analyze/analyze", { target: value }))
           .then(data => {
-            renderJSONSimple(els.analyze.body, data);  // نمایش ساده JSON مثل نسخه‌های اولیه
+            renderAnalyzeCustom(els.analyze.body, data);
             setBadge(els.analyze.badge,"ok","موفق");
             try{
               const ipFromAnalyze =
@@ -668,8 +724,8 @@
 
   // اجرای خودکار با ?q=
   const qs = new URLSearchParams(location.search);
-  if (qs.get("q")){
-    els.input.value = qs.get("q");
-    runAll(els.input.value);
-  }
+    if (qs.get("q")){
+      els.input.value = qs.get("q");
+      runAll(els.input.value);
+    }
 })();
