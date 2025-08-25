@@ -4,7 +4,7 @@ import requests
 from urllib.parse import urlparse
 from Wappalyzer import Wappalyzer, WebPage
 #from config.py import ALIENVAULT_API_KEY
-ALIENVAULT_API_KEY = "Y0fa1fd334ace3f185c9a495746273d907788763b586dc6872f0dd213d8c1dc44"
+ALIENVAULT_API_KEY = ""
 app = Blueprint('analyzer', __name__)
 
 COMMON_PORTS = [20, 21, 22, 23, 25, 53, 67, 68, 69, 80,
