@@ -81,8 +81,8 @@ hr.soft{border:0; border-top:1px solid var(--border); margin:10px 0}
   padding:10px 12px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
   font-size:12px;
-  line-height:1.35; /* فشرده‌تر */
-  white-space:pre;  /* مثل فایل زون */
+  line-height:1.35; 
+  white-space:pre;  
   overflow:auto;
 }
 .zone-group{margin-bottom:10px}

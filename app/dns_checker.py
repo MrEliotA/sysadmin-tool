@@ -42,7 +42,7 @@ def resolve_all_records(resolver: dns.resolver.Resolver, domain: str, record_typ
                 records = [r.to_text() for r in answers]
             results[rtype] = records
         except dns.resolver.NoAnswer:
-            results[rtype] = []  # رکورد موجود نیست
+            results[rtype] = []  
         except dns.resolver.NXDOMAIN:
             results[rtype] = ["NXDOMAIN"]
         except dns.resolver.NoNameservers as e:

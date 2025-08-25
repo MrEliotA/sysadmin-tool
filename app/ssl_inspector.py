@@ -149,7 +149,7 @@ def summarize_ssllabs(data: dict):
             vulns.add("TLS 1.0 enabled (legacy)")
         if "1.1" in proto_names:
             vulns.add("TLS 1.1 enabled (legacy)")
-        # SSLv2/3 معمولاً دیگر دیده نمی‌شود؛ اگر بود:
+        # SSLv2/3م
         if any(v in ("2.0", "3.0") for v in proto_names):
             vulns.add("SSLv2/SSLv3 enabled (insecure)")
 
@@ -159,7 +159,6 @@ def summarize_ssllabs(data: dict):
 
     overall_grade = None
     if grades:
-        # بدترین نمره را به‌عنوان overall انتخاب کن
         overall_grade = sorted(grades, key=_grade_rank, reverse=True)[0]
 
     return {

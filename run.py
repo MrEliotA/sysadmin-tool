@@ -1,7 +1,7 @@
 # app.py
 from app import create_app
 
-# ایجاد و اجرای اپلیکیشن Flask
+
 app = create_app()
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   app:
@@ -15,11 +15,11 @@ services:
 
   frontend:
     build:
-      context: ./frontend      # مسیر پوشه فرانت
-      dockerfile: Dockerfile   # Dockerfile فرانت
+      context: ./frontend      
+      dockerfile: Dockerfile   
     container_name: domain-inspector-frontend
     #depends_on:
     #  - api
     ports:
-      - "3000:80"              # اپ فرانت روی http://localhost:3000
+      - "3000:80"             
     restart: unless-stopped

@@ -167,7 +167,7 @@
 
     const pre = document.createElement("pre");
     pre.className = "monospace";
-    pre.style.whiteSpace = "pre"; // هر رکورد یک خط؛ اسکرول افقی در صورت نیاز
+    pre.style.whiteSpace = "pre"; // one record per line; allow horizontal scroll if needed
     pre.style.textAlign = "left";
     pre.style.direction = "ltr";
     pre.style.overflow = "auto";
@@ -429,7 +429,7 @@
       box.appendChild(line);
     };
 
-    // ترتیب مورد نظر:
+    // Required order:
     addKV("creation_date", data.creation_date ?? (rawObj && rawObj.creation_date));
     addKV("expiration_date", data.expiration_date ?? (rawObj && rawObj.expiration_date));
 
@@ -439,13 +439,13 @@
 
     addKV("status", (rawObj && rawObj.status) ?? data.status);
 
-    // name_servers: هر مورد در خط خودش
+    // name_servers: each item on its own line
     const nsList = Array.isArray(data.name_servers) ? data.name_servers
                  : (data.name_servers ? [data.name_servers] : []);
     if (nsList.length) nsList.forEach(ns => addKV("name_servers", ns));
     else addKV("name_servers", "—");
 
-    // سایر آیتم‌ها
+    // Other items
     addKV("registrar", (rawObj && rawObj.registrar) ?? data.registrar);
     addKV("dnssec", rawObj ? rawObj.dnssec : undefined);
     addKV("name", rawObj ? rawObj.name : undefined);
@@ -500,7 +500,7 @@
         const port = p?.port ?? "—";
         let banner = p?.banner;
         if (banner == null || banner === "") banner = "—";
-        // state نباید نمایش داده شود
+        // do not show "state"
         addLine(`${port} — ${banner}`);
       });
     } else {
@@ -575,6 +575,97 @@
     }
   }
 
+  /* -------------------- DNS Propagation (new) -------------------- */
+  function signatureForType(recordsObj, type){
+    const v = recordsObj?.[type];
+    if (v == null) return "";
+    let arr = [];
+    if (Array.isArray(v)) {
+      arr = v.map(item => recordValueToString(type, item)).filter(Boolean);
+    } else {
+      const s = recordValueToString(type, v);
+      if (s) arr = [s];
+    }
+    const uniqSorted = [...new Set(arr)].sort();
+    return uniqSorted.join("||");
+  }
+  function buildConsensus(serversObj){
+    const serverNames = Object.keys(serversObj || {});
+    const consensus = {}; // type -> { winnerSig, allEqual }
+    TYPE_KEYS.forEach(type => {
+      const sigs = serverNames.map(srv => signatureForType(serversObj[srv], type));
+      const uniq = [...new Set(sigs)];
+      // winner = most frequent signature
+      const counts = new Map();
+      sigs.forEach(s => counts.set(s, (counts.get(s) || 0) + 1));
+      let winnerSig = "";
+      let max = -1;
+      counts.forEach((cnt, sig) => { if (cnt > max) { max = cnt; winnerSig = sig; } });
+      consensus[type] = { winnerSig, allEqual: uniq.length <= 1 };
+    });
+    return consensus;
+  }
+  function renderDNSPropagation(targetEl, data){
+    targetEl.classList.remove("empty");
+    targetEl.innerHTML = "";
+
+    const servers = (data && data.servers) || {};
+    const serverNames = Object.keys(servers);
+    if (!serverNames.length){
+      targetEl.textContent = "داده‌ای یافت نشد.";
+      return;
+    }
+
+    const consensus = buildConsensus(servers);
+    const box = document.createElement("div");
+    box.className = "ssl-lines";
+    box.style.textAlign = "left";
+    box.style.direction = "ltr";
+
+    const green = "#16a34a"; // all records identical across servers
+    const red   = "#dc2626"; // differs from majority
+
+    serverNames.forEach(name => {
+      const head = document.createElement("div");
+      head.style.fontWeight = "700";
+      head.style.margin = "8px 0 6px";
+      head.textContent = `سرور ${name}`;
+      box.appendChild(head);
+
+      const recs = servers[name] || {};
+      TYPE_KEYS.forEach(type => {
+        const v = recs[type];
+        if (v == null) return;
+        const values = Array.isArray(v) ? v : [v];
+        if (!values.length) return;
+
+        const sig = signatureForType(recs, type);
+        const { winnerSig, allEqual } = consensus[type] || {};
+        const color = allEqual ? green : (sig !== winnerSig ? red : "");
+
+        values.forEach(item => {
+          const valStr = recordValueToString(type, item);
+          if (!valStr) return;
+          const line = document.createElement("div");
+          line.className = "kv-line";
+          if (color) line.style.color = color;
+          const k = document.createElement("span");
+          k.className = "key";
+          k.textContent = `${type}: `;
+          const vspan = document.createElement("span");
+          vspan.className = "val";
+          vspan.textContent = valStr;
+          line.appendChild(k);
+          line.appendChild(vspan);
+          box.appendChild(line);
+        });
+      });
+    });
+
+    targetEl.appendChild(box);
+    addCopyBtn(targetEl);
+  }
+
   /* -------------------- runner -------------------- */
   async function runAll(rawInput){
     abortAll();
@@ -600,7 +691,7 @@
     const runAnalyze = els.autoAnalyze.checked;
     const runProp = els.propCheck.checked && (type === "domain");
 
-    // ورودی IP → کارت IP Info
+    // IP input → IP Info card
     if (type === "ip") {
       putSpinner(els.ip.body);
       setBadge(els.ip.badge, "", "در حال بررسی");
@@ -650,7 +741,7 @@
       );
     }
 
-    // Domain (یکدست + با کلید)
+    // Domain (unified + with keys)
     if (runDomain){
       tasks.push(
         getJSON(makeURL("/domain/", { domain: value }))
@@ -660,7 +751,7 @@
       );
     }
 
-    // Analyze → از /api/analyze/analyze و رندر سفارشی
+    // Analyze → from /api/analyze/analyze with custom render
     if (runAnalyze){
       tasks.push(
         getJSON(makeURL("/analyze/analyze", { target: value }))
@@ -686,7 +777,7 @@
     if (runProp){
       tasks.push(
         getJSON(makeURL("/dns/propagation", { domain: value }))
-          .then(data => renderJSONSimple(els.prop.body, data))
+          .then(data => renderDNSPropagation(els.prop.body, data))
           .then(()=> setBadge(els.prop.badge,"ok","موفق"))
           .catch(err => { els.prop.body.textContent = err.message; setBadge(els.prop.badge,"err","خطا"); })
       );
@@ -699,13 +790,13 @@
     });
   }
 
-  // فرم
+  // form
   els.form.addEventListener("submit", (e)=>{
     e.preventDefault();
     runAll(els.input.value);
   });
 
-  // ریست
+  // reset
   els.resetBtn.addEventListener("click", ()=>{
     els.input.value = "";
     [els.dns,els.ssl,els.ip,els.domain,els.analyze,els.prop].forEach(b=>{
@@ -716,13 +807,13 @@
     toast("ریست شد.");
   });
 
-  // کپی همه
+  // copy all
   els.copyAllBtn.addEventListener("click", ()=>{
     const text = $$(".card-body").map(x=>x.innerText).join("\n\n----------------\n\n");
     navigator.clipboard.writeText(text).then(()=>toast("همه نتایج کپی شد."), ()=>toast("کپی ناموفق بود.", true));
   });
 
-  // اجرای خودکار با ?q=
+  // auto-run with ?q=
   const qs = new URLSearchParams(location.search);
     if (qs.get("q")){
       els.input.value = qs.get("q");
