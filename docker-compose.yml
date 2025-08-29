@@ -21,5 +21,5 @@ services:
     #depends_on:
     #  - api
     ports:
-      - "3000:80"             
+      - "80:80"             
     restart: unless-stopped
